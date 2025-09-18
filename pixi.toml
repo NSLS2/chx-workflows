@@ -4,7 +4,8 @@ name = "prefect3 test"
 platforms = ["linux-64"]
 
 [dependencies]
-prefect = "==3.4.6"
+prefect = "3.*"
+python = "<3.13"
 tiled-client = ">0.1.b035"
 prefect-docker = "*"
 databroker = "*"
