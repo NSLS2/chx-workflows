@@ -25,6 +25,7 @@ def process_run(ref):
     full_uid = run.start["uid"]
     logger.info(f"{full_uid = }")
     logger.info("Do something with this uid")
+    logger.info("Now do something else with this uid")
     # Do some additional processing or call otehr python processing functions
 
 
