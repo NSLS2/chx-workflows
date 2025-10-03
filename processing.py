@@ -1,8 +1,13 @@
 from prefect import flow, task, get_run_logger
+from prefect.blocks.system import Secret
 from tiled.client import from_profile
+import os
 import pytest
 
+api_key = Secret.load("tiled-chx-api-key")
+os.environ["TILED_API_KEY"] = api_key.get()
 tiled_client = from_profile("nsls2")["chx"]
+os.environ.pop("TILED_API_KEY")
 tiled_client_chx = tiled_client["raw"]
 tiled_cilent_sandbox = tiled_client["sandbox"]
 tiled_cilent_processed = tiled_client["processed"]
