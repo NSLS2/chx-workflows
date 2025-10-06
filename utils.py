@@ -6,7 +6,7 @@ import os
 LOCATION="chx"
 
 def get_tiled_client(structure_client=None):
-    os.environ["TILED_API_KEY"] = Secret.load(f"tiled-{LOCATION}-api-key").get()
+    os.environ["TILED_API_KEY"] = Secret.load(f"tiled-{LOCATION}-api-key", _sync=True).get()
     if structure_client:
         tiled_client = from_profile("nsls2", structure_client=structure_client)[LOCATION]
     else:
