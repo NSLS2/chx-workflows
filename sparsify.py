@@ -10,6 +10,7 @@ from functools import reduce
 from masks import MaskClient, combine_masks
 from pathlib import Path
 from prefect import flow, task, get_run_logger
+from prefect.blocks.system import Secret
 from tiled.client import from_profile
 from tiled.structures.sparse import COOStructure
 
@@ -18,7 +19,8 @@ from tiled.structures.sparse import COOStructure
 EXPORT_PATH = Path("/nsls2/data/dssi/scratch/prefect-outputs/chx/")
 
 # distributed_client = distributed.Client(n_workers=1, threads_per_worker=1, processes=False)
-tiled_client = from_profile("nsls2", "dask")["chx"]
+api_key = Secret.load("tiled-chx-api-key").get()
+tiled_client = from_profile("nsls2", "dask", api_key=api_key)["chx"]
 tiled_client_chx = tiled_client["raw"]
 tiled_client_sandbox = tiled_client["sandbox"]
 

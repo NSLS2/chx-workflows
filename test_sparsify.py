@@ -12,9 +12,11 @@ from masks import MaskClient
 from tiled.client import from_profile
 from tiled.queries import Key
 from prefect.testing.utilities import prefect_test_harness
+from prefect.blocks.system import Secret
 
 DATA_DIRECTORY = Path("/nsls2/data/chx/legacy/Compressed_Data")
-tiled_client = from_profile("nsls2", "dask")["chx"]
+api_key = Secret.load("tiled-chx-api-key").get()
+tiled_client = from_profile("nsls2", "dask", api_key=api_key)["chx"]
 tiled_client_chx = tiled_client["raw"]
 tiled_client_sandbox = tiled_client["sandbox"]
 mask_client = MaskClient(tiled_client_sandbox)
