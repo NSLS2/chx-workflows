@@ -15,7 +15,7 @@ from prefect.testing.utilities import prefect_test_harness
 from prefect.blocks.system import Secret
 
 DATA_DIRECTORY = Path("/nsls2/data/chx/legacy/Compressed_Data")
-api_key = Secret.load("tiled-chx-api-key").get()
+api_key = Secret.load("tiled-chx-api-key", _sync=True).get()
 tiled_client = from_profile("nsls2", "dask", api_key=api_key)["chx"]
 tiled_client_chx = tiled_client["raw"]
 tiled_client_sandbox = tiled_client["sandbox"]

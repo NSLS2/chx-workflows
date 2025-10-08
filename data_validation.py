@@ -6,7 +6,7 @@ from tiled.client import from_profile
 
 @task(retries=2, retry_delay_seconds=10)
 def read_all_streams(uid):
-    api_key = Secret.load("tiled-chx-api-key").get()
+    api_key = Secret.load("tiled-chx-api-key", _sync=True).get()
     tiled_client = from_profile("nsls2", api_key=api_key)
     logger = get_run_logger()
     run = tiled_client['chx']["raw"][uid]

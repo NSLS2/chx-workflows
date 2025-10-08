@@ -19,7 +19,7 @@ from tiled.structures.sparse import COOStructure
 EXPORT_PATH = Path("/nsls2/data/dssi/scratch/prefect-outputs/chx/")
 
 # distributed_client = distributed.Client(n_workers=1, threads_per_worker=1, processes=False)
-api_key = Secret.load("tiled-chx-api-key").get()
+api_key = Secret.load("tiled-chx-api-key", _sync=True).get()
 tiled_client = from_profile("nsls2", "dask", api_key=api_key)["chx"]
 tiled_client_chx = tiled_client["raw"]
 tiled_client_sandbox = tiled_client["sandbox"]
