@@ -35,5 +35,4 @@ deployments:
         container_create_kwargs:
           userns_mode: "keep-id:uid=402958,gid=402958"  # workflow-chx:workflow-chx
         auto_remove: true
-        image_pull_policy: Always
       name: chx-work-pool-docker
