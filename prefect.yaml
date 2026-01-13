@@ -1,5 +1,5 @@
 name: prefect-docker-pixi-tiled-chx
-prefect-version: 3.4.18
+prefect-version: 3.6.10
 
 build: null
 
