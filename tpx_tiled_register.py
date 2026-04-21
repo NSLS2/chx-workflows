@@ -62,8 +62,8 @@ def converted_path(filepath: Union[str, Path] , extension: str = f_type.PARQUET,
 @task(retries=1)
 async def frame_register(client,paths,cent=True):
     logger = get_run_logger()
-    logger.info()
-    files = converted_path(paths, extension='.parquet', cent=cent)
+    logger.info("... registering files")
+    files = sorted(converted_path(paths, extension='.parquet', cent=cent))
     ddf = dd.read_parquet(files)
     system = [file.as_uri() for file in files]
     adapter = ParquetDatasetAdapter(system, table.from_dask_dataframe(ddf)).dataframe_adapter
