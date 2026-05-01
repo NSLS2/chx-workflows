@@ -10,9 +10,9 @@ def log_completion():
 
 
 @flow
-def end_of_run_workflow(stop_doc):
+def end_of_run_workflow(stop_doc, api_key=None):
     uid = stop_doc["run_start"]
     # return_state = True delays raising exceptions until the end of the validation
-    # data_validation(uid, return_state=True)
-    processing_flow(uid)
+    # data_validation(uid, api_key=api_key)
+    processing_flow(uid, api_key=api_key)
     log_completion()
