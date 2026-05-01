@@ -1,5 +1,6 @@
 import filecmp
 import numpy as np
+import os
 import pytest
 import tiled
 
@@ -9,21 +10,51 @@ from pandas import Timestamp
 from pathlib import Path
 from sparsify import get_metadata, sparsify
 from masks import MaskClient
-from tiled.client import from_profile
 from tiled.queries import Key
 from prefect.testing.utilities import prefect_test_harness
-from prefect.blocks.system import Secret
+from dotenv import load_dotenv
 
 DATA_DIRECTORY = Path("/nsls2/data/chx/legacy/Compressed_Data")
-api_key = Secret.load("tiled-chx-api-key", _sync=True).get()
-tiled_client = from_profile("nsls2", "dask", api_key=api_key)["chx"]
-tiled_client_chx = tiled_client["raw"]
-tiled_client_sandbox = tiled_client["sandbox"]
-mask_client = MaskClient(tiled_client_sandbox)
 
-run1 = tiled_client_chx["d85d157f-57d9-4649-9b65-0d3b9f754e01"]
-run2 = tiled_client_chx["e909f4a2-12e3-4521-a7a6-be2b728a826b"]
-run3 = tiled_client_chx["b79184e1-d053-42e4-b1eb-f8ab0a146220"]
+
+def get_api_key_from_env(api_key=None):
+    with open("/srv/container.secret", "r") as secrets:
+        load_dotenv(stream=secrets)
+    api_key = os.environ["TILED_API_KEY"]
+    return api_key
+
+
+@task(retries=2, retry_delay_seconds=10)
+def get_run(uid, api_key=None):
+    if not api_key:
+        api_key = get_api_key_from_env()
+    cl = from_uri("https://tiled.nsls2.bnl.gov", "dask", api_key=api_key)
+    run = cl["chx/raw"][uid]
+    return run
+
+
+@task(retries=2, retry_delay_seconds=10)
+def get_run_sandbox(uid, api_key=None):
+    if not api_key:
+        api_key = get_api_key_from_env()
+    cl = from_uri("https://tiled.nsls2.bnl.gov", "dask", api_key=api_key)
+    run = cl["chx/sandbox"][uid]
+    return run
+
+
+@task(retries=2, retry_delay_seconds=10)
+def get_tiled_client_sandbox(api_key=None):
+    if not api_key:
+        api_key = get_api_key_from_env()
+    cl = from_uri("https://tiled.nsls2.bnl.gov", "dask", api_key=api_key)
+    client_sandbox = cl["chx/sandbox"]
+    return client_sandbox
+
+mask_client = MaskClient(get_tiled_client_sandbox())
+
+run1 = get_run("d85d157f-57d9-4649-9b65-0d3b9f754e01")
+run2 = get_run("e909f4a2-12e3-4521-a7a6-be2b728a826b")
+run3 = get_run("b79184e1-d053-42e4-b1eb-f8ab0a146220")
 
 test_runs = (
     "14ed6885-2b6a-4645-85a2-a09413f618c2", # Just fixed the rootmap.
@@ -64,7 +95,7 @@ def test_get_metadata(run_uid):
     metadata.
     """
 
-    run = tiled_client_chx[run_uid]
+    run = get_run(run_uid)
     metadata_new = get_metadata(run)
 
     original_data = multifile_reader(
@@ -100,7 +131,7 @@ def test_sparsify(run_uid):
     )
 
     processed_uid = sparsify.fn(run_uid)
-    new_data = tiled_client_sandbox[processed_uid]
+    new_data = get_run_sandbox(processed_uid)
 
     for frame_number in range(new_data.shape[1]):
         assert np.array_equal(new_data[0][frame_number].todense(),
@@ -116,6 +147,6 @@ def test_multifile(run_uid):
     original_file = f"{DATA_DIRECTORY}/uid_{run_uid}.cmp"
     processed_uid = sparsify.fn(run_uid)
     new_file = f"/tmp/{processed_uid}.cmp"
-    processed_data = tiled_client_sandbox[processed_uid]
+    processed_data = get_run_sandbox(processed_uid)
     processed_data.export(new_file, format='application/x-eiger-multifile')
     assert filecmp.cmp(original_file, new_file)
