@@ -8,47 +8,13 @@ from dictdiffer import diff
 from chx_compress.io.multifile.multifile import multifile_reader
 from pandas import Timestamp
 from pathlib import Path
-from sparsify import get_metadata, sparsify
+from sparsify import get_metadata, sparsify, get_run, get_run_sandbox
 from masks import MaskClient
 from tiled.queries import Key
 from prefect.testing.utilities import prefect_test_harness
 from dotenv import load_dotenv
 
 DATA_DIRECTORY = Path("/nsls2/data/chx/legacy/Compressed_Data")
-
-
-def get_api_key_from_env(api_key=None):
-    with open("/srv/container.secret", "r") as secrets:
-        load_dotenv(stream=secrets)
-    api_key = os.environ["TILED_API_KEY"]
-    return api_key
-
-
-@task(retries=2, retry_delay_seconds=10)
-def get_run(uid, api_key=None):
-    if not api_key:
-        api_key = get_api_key_from_env()
-    cl = from_uri("https://tiled.nsls2.bnl.gov", "dask", api_key=api_key)
-    run = cl["chx/raw"][uid]
-    return run
-
-
-@task(retries=2, retry_delay_seconds=10)
-def get_run_sandbox(uid, api_key=None):
-    if not api_key:
-        api_key = get_api_key_from_env()
-    cl = from_uri("https://tiled.nsls2.bnl.gov", "dask", api_key=api_key)
-    run = cl["chx/sandbox"][uid]
-    return run
-
-
-@task(retries=2, retry_delay_seconds=10)
-def get_tiled_client_sandbox(api_key=None):
-    if not api_key:
-        api_key = get_api_key_from_env()
-    cl = from_uri("https://tiled.nsls2.bnl.gov", "dask", api_key=api_key)
-    client_sandbox = cl["chx/sandbox"]
-    return client_sandbox
 
 mask_client = MaskClient(get_tiled_client_sandbox())
 
