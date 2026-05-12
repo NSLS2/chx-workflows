@@ -23,7 +23,7 @@ def get_api_key_from_env(api_key=None):
 
 
 @task(retries=2, retry_delay_seconds=10)
-def get_run(uid, api_key=None):
+def get_run_dask(uid, api_key=None):
     if not api_key:
         api_key = get_api_key_from_env()
     cl = from_uri("https://tiled.nsls2.bnl.gov", "dask", api_key=api_key)
@@ -32,7 +32,7 @@ def get_run(uid, api_key=None):
 
 
 @task(retries=2, retry_delay_seconds=10)
-def get_run_sandbox(uid, api_key=None):
+def get_run_sandbox_dask(uid, api_key=None):
     if not api_key:
         api_key = get_api_key_from_env()
     cl = from_uri("https://tiled.nsls2.bnl.gov", "dask", api_key=api_key)
@@ -40,7 +40,7 @@ def get_run_sandbox(uid, api_key=None):
     return run
 
 @task(retries=2, retry_delay_seconds=10)
-def get_tiled_client_sandbox(uid, api_key=None):
+def get_tiled_client_sandbox_dask(uid, api_key=None):
     if not api_key:
         api_key = get_api_key_from_env()
     cl = from_uri("https://tiled.nsls2.bnl.gov", "dask", api_key=api_key)
@@ -127,7 +127,7 @@ def write_sparse_chunk(data, dataset_id=None, block_info=None, dataset=None):
 
     if block_info:
         if dataset is None:
-            dataset = get_run_sandbox(dataset_id)
+            dataset = get_run_sandbox_dask(dataset_id)
 
         dataset.write_block(
             coords=result.coords,
@@ -166,7 +166,7 @@ def sparsify(
     logger = get_run_logger()
 
     # Get the BlueskyRun from Tiled.
-    run = get_run(ref)
+    run = get_run_dask(ref)
 
     # Compose the run metadata.
     metadata = get_metadata(run)
@@ -182,7 +182,7 @@ def sparsify(
         images = np.rot90(images, axes=(3, 2))
 
     # Get the mask.
-    mask_client = MaskClient(get_tiled_client_sandbox())
+    mask_client = MaskClient(get_tiled_client_sandbox_dask())
     uid_masks = [mask_client.get_mask(detector_name, mask_name)
                  for mask_name in mask_names]
     uids = [uid for uid, mask in uid_masks]
@@ -204,7 +204,7 @@ def sparsify(
     images = images.rechunk(block_size_limit=75_000_000)
 
     # Create a new dataset in tiled.
-    dataset = get_tiled_client_sandbox().new(
+    dataset = get_tiled_client_sandbox_dask().new(
         "sparse",
         COOStructure(
             shape=images.shape,

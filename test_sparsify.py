@@ -8,7 +8,7 @@ from dictdiffer import diff
 from chx_compress.io.multifile.multifile import multifile_reader
 from pandas import Timestamp
 from pathlib import Path
-from sparsify import get_metadata, sparsify, get_run, get_run_sandbox
+from sparsify import get_metadata, sparsify, get_run_dask, get_run_sandbox_dask, get_tiled_client_sandbox_dask
 from masks import MaskClient
 from tiled.queries import Key
 from prefect.testing.utilities import prefect_test_harness
@@ -16,11 +16,11 @@ from dotenv import load_dotenv
 
 DATA_DIRECTORY = Path("/nsls2/data/chx/legacy/Compressed_Data")
 
-mask_client = MaskClient(get_tiled_client_sandbox())
+mask_client = MaskClient(get_tiled_client_sandbox_dask())
 
-run1 = get_run("d85d157f-57d9-4649-9b65-0d3b9f754e01")
-run2 = get_run("e909f4a2-12e3-4521-a7a6-be2b728a826b")
-run3 = get_run("b79184e1-d053-42e4-b1eb-f8ab0a146220")
+run1 = get_run_dask("d85d157f-57d9-4649-9b65-0d3b9f754e01")
+run2 = get_run_dask("e909f4a2-12e3-4521-a7a6-be2b728a826b")
+run3 = get_run_dask("b79184e1-d053-42e4-b1eb-f8ab0a146220")
 
 test_runs = (
     "14ed6885-2b6a-4645-85a2-a09413f618c2", # Just fixed the rootmap.
@@ -61,7 +61,7 @@ def test_get_metadata(run_uid):
     metadata.
     """
 
-    run = get_run(run_uid)
+    run = get_run_dask(run_uid)
     metadata_new = get_metadata(run)
 
     original_data = multifile_reader(
@@ -97,7 +97,7 @@ def test_sparsify(run_uid):
     )
 
     processed_uid = sparsify.fn(run_uid)
-    new_data = get_run_sandbox(processed_uid)
+    new_data = get_run_sandbox_dask(processed_uid)
 
     for frame_number in range(new_data.shape[1]):
         assert np.array_equal(new_data[0][frame_number].todense(),
@@ -113,6 +113,6 @@ def test_multifile(run_uid):
     original_file = f"{DATA_DIRECTORY}/uid_{run_uid}.cmp"
     processed_uid = sparsify.fn(run_uid)
     new_file = f"/tmp/{processed_uid}.cmp"
-    processed_data = get_run_sandbox(processed_uid)
+    processed_data = get_run_sandbox_dask(processed_uid)
     processed_data.export(new_file, format='application/x-eiger-multifile')
     assert filecmp.cmp(original_file, new_file)
