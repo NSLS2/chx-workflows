@@ -29,6 +29,7 @@ deployments:
         network: slirp4netns
         volumes:
           - /nsls2/data/chx/proposals:/nsls2/data/chx/proposals
+          - /srv/prefect3-docker-worker-chx/app:/srv
         container_create_kwargs:
           userns_mode: "keep-id:uid=402958,gid=402958"  # workflow-chx:workflow-chx
         auto_remove: true
