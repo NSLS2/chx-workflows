@@ -14,12 +14,7 @@ from prefect import flow, task, get_run_logger
 from tiled.structures.sparse import COOStructure
 from dotenv import load_dotenv
 
-
-def get_api_key_from_env(api_key=None):
-    with open("/srv/container.secret", "r") as secrets:
-        load_dotenv(stream=secrets)
-    api_key = os.environ["TILED_API_KEY"]
-    return api_key
+from data_validation import get_api_key_from_env
 
 
 @task(retries=2, retry_delay_seconds=10)
