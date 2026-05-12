@@ -1,6 +1,7 @@
 import sys
 sys.path.insert(0, "/nsls2/data/chx/shared/workflows")
 
+import os
 import numpy as np
 import sparse
 import tiled
@@ -10,19 +11,42 @@ from functools import reduce
 from masks import MaskClient, combine_masks
 from pathlib import Path
 from prefect import flow, task, get_run_logger
-from prefect.blocks.system import Secret
-from tiled.client import from_profile
 from tiled.structures.sparse import COOStructure
+from dotenv import load_dotenv
+
+from data_validation import get_api_key_from_env
+
+
+@task(retries=2, retry_delay_seconds=10)
+def get_run_dask(uid, api_key=None):
+    if not api_key:
+        api_key = get_api_key_from_env()
+    cl = from_uri("https://tiled.nsls2.bnl.gov", "dask", api_key=api_key)
+    run = cl["chx/raw"][uid]
+    return run
+
+
+@task(retries=2, retry_delay_seconds=10)
+def get_run_sandbox_dask(uid, api_key=None):
+    if not api_key:
+        api_key = get_api_key_from_env()
+    cl = from_uri("https://tiled.nsls2.bnl.gov", "dask", api_key=api_key)
+    run = cl["chx/sandbox"][uid]
+    return run
+
+@task(retries=2, retry_delay_seconds=10)
+def get_tiled_client_sandbox_dask(uid, api_key=None):
+    if not api_key:
+        api_key = get_api_key_from_env()
+    cl = from_uri("https://tiled.nsls2.bnl.gov", "dask", api_key=api_key)
+    client_sandbox = cl["chx/sandbox"]
+    return client_sandbox
 
 
 
 EXPORT_PATH = Path("/nsls2/data/dssi/scratch/prefect-outputs/chx/")
 
 # distributed_client = distributed.Client(n_workers=1, threads_per_worker=1, processes=False)
-api_key = Secret.load("tiled-chx-api-key", _sync=True).get()
-tiled_client = from_profile("nsls2", "dask", api_key=api_key)["chx"]
-tiled_client_chx = tiled_client["raw"]
-tiled_client_sandbox = tiled_client["sandbox"]
 
 def get_metadata(run):
     """
@@ -98,9 +122,7 @@ def write_sparse_chunk(data, dataset_id=None, block_info=None, dataset=None):
 
     if block_info:
         if dataset is None:
-            tiled_client = from_profile("nsls2", "dask")["chx"]
-            tiled_client_sandbox = tiled_client["sandbox"]
-            dataset = tiled_client_sandbox[dataset_id]
+            dataset = get_run_sandbox_dask(dataset_id)
 
         dataset.write_block(
             coords=result.coords,
@@ -139,7 +161,7 @@ def sparsify(
     logger = get_run_logger()
 
     # Get the BlueskyRun from Tiled.
-    run = tiled_client_chx[ref]
+    run = get_run_dask(ref)
 
     # Compose the run metadata.
     metadata = get_metadata(run)
@@ -155,7 +177,7 @@ def sparsify(
         images = np.rot90(images, axes=(3, 2))
 
     # Get the mask.
-    mask_client = MaskClient(tiled_client_sandbox)
+    mask_client = MaskClient(get_tiled_client_sandbox_dask())
     uid_masks = [mask_client.get_mask(detector_name, mask_name)
                  for mask_name in mask_names]
     uids = [uid for uid, mask in uid_masks]
@@ -177,7 +199,7 @@ def sparsify(
     images = images.rechunk(block_size_limit=75_000_000)
 
     # Create a new dataset in tiled.
-    dataset = tiled_client_sandbox.new(
+    dataset = get_tiled_client_sandbox_dask().new(
         "sparse",
         COOStructure(
             shape=images.shape,

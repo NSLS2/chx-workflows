@@ -1,3 +1,0 @@
-dictdiffer
-pytest
-pandas
