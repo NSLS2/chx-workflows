@@ -5,7 +5,7 @@ from prefect.blocks.notifications import SlackWebhook
 from prefect.context import FlowRunContext
 from prefect.settings import PREFECT_UI_URL
 
-from data_validation import data_validation, get_run, get_api_key_from_env
+from data_validation import data_validation, get_run
 from processing import processing_flow
 
 CATALOG_NAME = "chx"
@@ -33,10 +33,6 @@ def slack(func):
 
         # Get the uid.
         uid = stop_doc["run_start"]
-
-        # Get Tiled API key, if not set already
-        if not api_key:
-            api_key = get_api_key_from_env()
 
         # Get the scan_id.
         run = get_run(uid, api_key=api_key)
