@@ -70,16 +70,19 @@ def slack(func):
     return end_of_run_workflow
 
 @task
-def log_completion():
+def log_completion(dry_run=False):
     logger = get_run_logger()
-    logger.info("Complete")
+    if dry_run:
+        logger.info("Dry run: Complete")
+    else:
+        logger.info("Complete")
 
 
 @flow
 @slack
-def end_of_run_workflow(stop_doc, api_key=None):
+def end_of_run_workflow(stop_doc, api_key=None, dry_run=False):
     uid = stop_doc["run_start"]
     # return_state = True delays raising exceptions until the end of the validation
     # data_validation(uid, api_key=api_key)
     processing_flow(uid, api_key=api_key)
-    log_completion()
+    log_completion(dry_run=dry_run)
