@@ -93,7 +93,7 @@ async def frame_register(client,paths,cent=True):
         )
     
 
-@flow(name="TPX Tiled Registration")
+@flow(name="TPX Tiled One Off")
 async def main():
     db = from_uri('https://tiled.nsls2.bnl.gov', 'dask')
     logger = get_run_logger()
